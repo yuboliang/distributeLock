@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <property name="logRoot" value="/data/lock/logs"/>
+    <property name="logPatten" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %thread %logger{35} %level - %msg %n"/>
+
+    <!-- ==================== 控制台输出 ===================== -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${logPatten}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+    <!--写入日志到文件的appender-->
+    <appender name="FileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logRoot}/lock.log</file>
+        <!-- 设置滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!--日志文件输出的文件名,每天一个文件-->
+            <fileNamePattern>${logRoot}/hub.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- keep 60 days worth of history -->
+            <maxHistory>60</maxHistory>
+            <maxFileSize>100MB</maxFileSize>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${logPatten}</pattern>
+        </encoder>
+    </appender>
+
+    <root>
+        <level value="INFO" />
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FileAppender" />
+    </root>
+
+    <logger name="org.springframework.web" level="DEBUG" />
+
+</configuration>
