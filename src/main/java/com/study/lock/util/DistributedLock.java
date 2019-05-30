@@ -1,20 +1,15 @@
 package com.study.lock.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.core.types.Expiration;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author yuboliang
@@ -34,6 +29,11 @@ public class DistributedLock {
      * 锁值（redisValue）
      */
     private String lockValue;
+
+    /**
+     * 过期时间
+     */
+    private Integer expireTime;
 
     /**
      * 是否获取到锁标志
@@ -56,8 +56,9 @@ public class DistributedLock {
         UNLOCK_LUA = sb.toString();
     }
 
-    public DistributedLock(String lockName) {
+    public DistributedLock(String lockName, Integer expireTime) {
         this.lockName = lockName;
+        this.expireTime = expireTime;
         redisTemplate = SpringContextUtil.getBean("redisTemplate");
     }
 
@@ -69,8 +70,9 @@ public class DistributedLock {
         lockValue = UUID.randomUUID().toString();
         log.info("尝试获取分布式锁，key：{}，value:{}", lockName, lockValue);
         getLock = (boolean) redisTemplate.execute((RedisCallback) redisConnection ->
-                redisConnection.set(lockName.getBytes(), String.valueOf(System.currentTimeMillis()).getBytes(),
-                        Expiration.seconds(10), RedisStringCommands.SetOption.ifAbsent()));
+                redisConnection.set(redisTemplate.getKeySerializer().serialize(lockName),
+                        redisTemplate.getValueSerializer().serialize(lockValue),
+                        Expiration.seconds(expireTime), RedisStringCommands.SetOption.ifAbsent()));
         log.info("获取分布式锁结果:{}", getLock);
 
         return getLock;
@@ -130,18 +132,19 @@ public class DistributedLock {
             return false;
         }
 
-        RedisScript redisScript = new DefaultRedisScript(UNLOCK_LUA);
+        DefaultRedisScript redisScript = new DefaultRedisScript(UNLOCK_LUA);
+        redisScript.setResultType(Long.class);
 
-        List<String> keyList = new ArrayList<>();
+        List<Object> keyList = new ArrayList<>();
         keyList.add(lockName);
-        List<Object> values = new ArrayList<>();
-        values.add(lockValue);
+        Object values = lockValue;
 
-        Integer unLockValue = (Integer) redisTemplate.execute(redisScript, keyList, values);
+        Long unLockValue = (Long) redisTemplate.execute(redisScript, keyList, values);
         if (unLockValue == 0) {
             log.info("解锁失败，lockName:{}", lockName);
         }
+        log.info("解锁lockName:{}成功", lockName);
 
-        return unLockValue == 1;
+        return true;
     }
 }

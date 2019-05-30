@@ -13,7 +13,6 @@ import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
@@ -37,7 +36,6 @@ public class CacheConfig {
         template.setHashKeySerializer(template.getStringSerializer());
         template.setHashValueSerializer(jsonSerializer);
         template.afterPropertiesSet();
-
         return template;
     }
 

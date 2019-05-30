@@ -14,12 +14,13 @@ public class LockService {
 
     public void tryLock() {
         String lockName = "user:lock:123";
-        DistributedLock distributedLock = new DistributedLock(lockName);
+        DistributedLock distributedLock = new DistributedLock(lockName, 20);
 
         try {
             boolean lock = distributedLock.lock();
             if (lock) {
                 // TODO doBusiness
+                log.info("doBusiness");
             }
 
         } finally {
